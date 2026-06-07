@@ -943,7 +943,7 @@ useEffect(() => {
               <ChartCard
                 title="📈 Évolution du score"
                 subtitle={evolutionMode === "annee"
-                  ? `Globale(Tous les années)`
+                  ? `Évolution des évaluations de l'année ${anneeSelectionnee}`
                   : "Dernière évaluation terminée par année"}
               >
                 {/* Toggle buttons */}

@@ -75,6 +75,8 @@ export default function CertificatDownload({ organisme, responsable, evaluation,
   //const description=evaluation?.recommandations?.trim() || label;
   const dateSoumission=evaluation?.dateUpdate || "—";
   const rangValue = rang?.rang || "—";
+  const totalOrganismes = rang?.totalOrganismes ?? "—";
+
 
   const scoreDisplay=evaluation?.score && evaluation?.scoreMax
     ? `${evaluation.score} / ${evaluation.scoreMax}`
@@ -207,7 +209,7 @@ const labelStyle = LABEL_STYLES[label] ?? { color: "#0d1b4b", description: label
           fontSize: "clamp(30px, 1.8vw, 22px)",fontWeight: 500,color: "#334155",letterSpacing: "0.3px",
           background: "rgba(255,255,255,0.55)",padding: "4px 10px",borderRadius: "8px",
           whiteSpace: "nowrap",lineHeight: 1.2,}}>
-          🏆#{rangValue}
+          🏆#{rangValue}/{totalOrganismes} 
         </div>
     </div>
   )}

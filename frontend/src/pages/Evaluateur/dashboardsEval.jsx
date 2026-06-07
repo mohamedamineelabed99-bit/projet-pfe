@@ -699,15 +699,21 @@ const chartData = useMemo(() => {
   [selectedOrgId, listEvals]);
 
   const orgEvolutionData = useMemo(() =>
-    [...orgAllEvals]
-      .sort((a, b) => (a.dateCreation || "").localeCompare(b.dateCreation || ""))
-      .map((ev, i) => ({
-        index: `Eval ${i + 1}(${ev.dateUpdate || ev.dateCreation || ""})`,
-        date:  ev.dateTermination || ev.dateCreation || "",
-        score: ev.score && ev.scoreMax ? +((ev.score / ev.scoreMax) * 100).toFixed(1) : 0,
-        label: ev.label,
-      })),
-  [orgAllEvals]);
+  [...orgAllEvals]
+    .filter(ev => {
+      const y = ev.annee
+        ? String(ev.annee)
+        : (ev.dateTermination || ev.dateUpdate || ev.dateSoumission || "").substring(0, 4);
+      return y === filterYear;
+    })
+    .sort((a, b) => (a.dateCreation || "").localeCompare(b.dateCreation || ""))
+    .map((ev, i) => ({
+      index: `Eval ${i + 1} (${ev.dateUpdate || ev.dateCreation || ""})`,
+      date:  ev.dateTermination || ev.dateCreation || "",
+      score: ev.score && ev.scoreMax ? +((ev.score / ev.scoreMax) * 100).toFixed(1) : 0,
+      label: ev.label,
+    })),
+[orgAllEvals, filterYear]);
 
   const orgEvolutionDataByAnnee = useMemo(() => {
     const byYear = {};
@@ -1284,13 +1290,13 @@ const orgRadarData = useMemo(() => {
                                 <ChartCard
                                   title="📈 Évolution du score"
                                   subtitle={evolutionMode === "annee"
-                                    ? `Toutes les évaluations pour tous les années`
+                                    ? `Toutes les évaluations de l'année ${filterYear || "sélectionnée"}`
                                     : "Dernière évaluation terminée par année"}
                                 >
                                   {/* Toggle buttons */}
                                   <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                                     {[
-                                      { id:"annee",  label:`Globale (toutes les évaluations)` },
+                                      { id:"annee",  label:`Par éval. (${filterYear || "sélectionnée"})` },
                                       { id:"global", label:"Par année" },
                                     ].map(btn => (
                                       <button key={btn.id} onClick={() => setEvolutionMode(btn.id)}
@@ -1324,7 +1330,6 @@ const orgRadarData = useMemo(() => {
                                     ) : <EmptyState label="Pas d'historique disponible pour cette année" />
                                   )}
                   
-                                  {/* Mode 2 — latest eval per year */}
                                   {/* Mode 2 — latest eval per year */}
   {evolutionMode === "global" && (
     orgEvolutionDataByAnnee.length > 0 ? (

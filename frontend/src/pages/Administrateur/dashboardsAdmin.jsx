@@ -646,17 +646,24 @@ const chartData = useMemo(() => {
   [filteredLatestEvals]);
 
   const staleEvaluations = useMemo(() => {
-    const now = new Date();
-    return filteredEvals
-      .filter(ev => ev.status !== "terminé")
-      .map(ev => {
-        const ref  = new Date(ev.dateCreation || now);
-        const days = Math.floor((now - ref) / 86400000);
-        return { ...ev, daysInactive: days };
-      })
-      .filter(ev => ev.daysInactive >= 15)
-      .sort((a, b) => b.daysInactive - a.daysInactive);
-  }, [filteredEvals]);
+  const now = new Date();
+  return listEvals
+    .filter(ev => {
+      const s = (ev.status || ev.statut || "").toLowerCase().trim();
+      return s !== "terminé" && s !== "termine";
+    })
+    .map(ev => {
+      // Essaie toutes les dates disponibles, dans l'ordre de fiabilité
+      const rawDate = ev.dateCreation || ev.dateUpdate || ev.dateTermination;
+      const ref = rawDate ? new Date(rawDate) : null;
+      const daysInactive = ref && !isNaN(ref) 
+        ? Math.floor((now - ref) / 86400000) 
+        : 9999; // si aucune date → considérée très ancienne
+      return { ...ev, daysInactive };
+    })
+    .filter(ev => ev.daysInactive >= 15)
+    .sort((a, b) => b.daysInactive - a.daysInactive);
+}, [listEvals]);
 
   const certificationFunnel = useMemo(() => {
     const total    = filteredEvals.length;
@@ -699,15 +706,21 @@ const chartData = useMemo(() => {
   [selectedOrgId, listEvals]);
 
   const orgEvolutionData = useMemo(() =>
-    [...orgAllEvals]
-      .sort((a, b) => (a.dateCreation || "").localeCompare(b.dateCreation || ""))
-      .map((ev, i) => ({
-        index: `Eval ${i + 1}(${ev.dateUpdate || ev.dateCreation || ""})`,
-        date:  ev.dateTermination || ev.dateCreation || "",
-        score: ev.score && ev.scoreMax ? +((ev.score / ev.scoreMax) * 100).toFixed(1) : 0,
-        label: ev.label,
-      })),
-  [orgAllEvals]);
+  [...orgAllEvals]
+    .filter(ev => {
+      const y = ev.annee
+        ? String(ev.annee)
+        : (ev.dateTermination || ev.dateUpdate || ev.dateSoumission || "").substring(0, 4);
+      return y === filterYear;
+    })
+    .sort((a, b) => (a.dateCreation || "").localeCompare(b.dateCreation || ""))
+    .map((ev, i) => ({
+      index: `Eval ${i + 1} (${ev.dateUpdate || ev.dateCreation || ""})`,
+      date:  ev.dateTermination || ev.dateCreation || "",
+      score: ev.score && ev.scoreMax ? +((ev.score / ev.scoreMax) * 100).toFixed(1) : 0,
+      label: ev.label,
+    })),
+[orgAllEvals, filterYear]);
 
   const orgEvolutionDataByAnnee = useMemo(() => {
     const byYear = {};
@@ -909,6 +922,10 @@ const orgRadarData = useMemo(() => {
       </div>
     );
   }
+  console.log("listEvals total:", listEvals.length);
+  console.log("statuts:", listEvals.map(ev => ev.status));
+  console.log("staleEvaluations:", staleEvaluations);
+  console.log("statuts détail:", listEvals.map(ev => ({ id: ev.id, status: ev.status, dateCreation: ev.dateCreation })));
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -1284,13 +1301,13 @@ const orgRadarData = useMemo(() => {
                                 <ChartCard
                                   title="📈 Évolution du score"
                                   subtitle={evolutionMode === "annee"
-                                    ? `Toutes les évaluations pour tous les années`
+                                    ? `Toutes les évaluations de l'année ${filterYear || "sélectionnée"}`
                                     : "Dernière évaluation terminée par année"}
                                 >
                                   {/* Toggle buttons */}
                                   <div style={{ display:"flex", gap:6, marginBottom:16 }}>
                                     {[
-                                      { id:"annee",  label:`Globale (toutes les évaluations)` },
+                                      { id:"annee",  label:`Par éval. (${filterYear || "sélectionnée"})` },
                                       { id:"global", label:"Par année" },
                                     ].map(btn => (
                                       <button key={btn.id} onClick={() => setEvolutionMode(btn.id)}
@@ -1324,7 +1341,6 @@ const orgRadarData = useMemo(() => {
                                     ) : <EmptyState label="Pas d'historique disponible pour cette année" />
                                   )}
                   
-                                  {/* Mode 2 — latest eval per year */}
                                   {/* Mode 2 — latest eval per year */}
   {evolutionMode === "global" && (
     orgEvolutionDataByAnnee.length > 0 ? (
