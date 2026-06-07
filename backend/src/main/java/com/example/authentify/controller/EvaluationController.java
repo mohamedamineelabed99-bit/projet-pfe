@@ -473,7 +473,7 @@ public ResponseEntity<String> setEvaluationScore(
         map.put("organismeSecteur", org != null ? org.getSecteur() : "_");
         map.put("responsableName", (org != null && org.getResponsable() != null) ? org.getResponsable().getNom() : "_");
         map.put("responsableRole", (org != null && org.getResponsable() != null) ? org.getResponsable().getJobRole() : "_");
-        map.put("status", ev.getStatut());
+        map.put("statut", ev.getStatut());
         map.put("progression", progression);
         map.put("totalCriteria", totalCriteria);
         map.put("treatedCriteria", treated);
