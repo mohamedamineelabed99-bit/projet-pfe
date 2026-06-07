@@ -525,7 +525,7 @@ export default function DashboardsEval() {
   //tache: score maoyen pour tous les évaluations by année 
   const avgScoreByAnnee = useMemo(() => {
     const map = {};
-    filteredEvals.forEach(ev => {
+    listEvals.forEach(ev => {
       if (!ev.annee || ev.score == null) return;
 
       if (!map[ev.annee]) {

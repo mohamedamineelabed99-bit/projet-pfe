@@ -430,6 +430,7 @@ export default function DashboardResp() {
   const EvolutionData = useMemo(() =>
     [...evaluations]
       // Trier par date de création ou de mise à jour (la plus ancienne en premier)
+      .filter(ev => ev.annee === anneeSelectionnee)
       .sort((a, b) => (a.dateCreation || "").localeCompare(b.dateCreation || ""))
       .map((ev, i) => ({
         index: `Eval ${i + 1}(${ev.dateUpdate || ev.dateCreation || ""})`,
@@ -590,7 +591,12 @@ useEffect(() => {
     if (!organismeId || !anneeSelectionnee) return; 
     fetchLatest(anneeSelectionnee);          
   }, [backendUrl, organismeId, anneeSelectionnee]);  
-  useEffect(() => { fetchScores(); },[backendUrl, organismeId, anneeSelectionnee]);
+
+
+  useEffect(() => {
+    if (!organismeId || !latestEval?.id) return;
+    fetchScores();
+  }, [backendUrl, organismeId, anneeSelectionnee, latestEval?.id]);
 
 useEffect(() => {
   if (!latestEval?.id) {
@@ -656,13 +662,15 @@ useEffect(() => {
       (p.pratiques || []).some(pr =>(pr.criteres || []).length > 0)
     );
     const latestScores = rawScores.filter(s => s.evaluationId === latestEval.id);
+    if (!latestScores.length) return [];
     return latestScores.map(item => {
       const principeObj=principesAvecCriteres.find(p=>p.id===item.principeId);
       if (!principeObj) return null;
       const nom = principeObj.nom;
       const pct = item.scoreMax ? (item.score / item.scoreMax * 100).toFixed(2) : 0;
       return { principe: nom, score: pct };
-    });
+    })
+      .filter(Boolean);
   }, [rawScores, principes, latestEval]);
 
   // ── Computed: global KPIs ─────────────────────────────────────────────────

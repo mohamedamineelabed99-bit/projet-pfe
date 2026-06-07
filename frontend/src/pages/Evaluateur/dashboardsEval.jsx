@@ -521,6 +521,26 @@ export default function DashboardsEval() {
     }).sort((a, b) => a.mois.localeCompare(b.mois));
   }, [filteredEvals]);
 
+
+  //tache: score maoyen pour tous les évaluations by année 
+  const avgScoreByAnnee = useMemo(() => {
+    const map = {};
+    listEvals.forEach(ev => {
+      if (!ev.annee || ev.score == null) return;
+
+      if (!map[ev.annee]) {
+        map[ev.annee] = {totalScore: 0,count: 0,};
+    };
+    map[ev.annee].totalScore += (ev.score / ev.scoreMax) * 100;
+    map[ev.annee].count++;
+  })
+  return Object.entries(map).map(([annee, d]) => ({
+    annee,
+    averageScore: d.count > 0 ? (d.totalScore / d.count).toFixed(1) : "—"
+  })).sort((a, b) => a.annee.localeCompare(b.annee));
+});
+    
+
   // ── Tab 2: Analyse des réponses ───────────────────────────────────────────
   const filteredChartDataReponse = useMemo(() => {
     const map = latestResponses.reduce((acc, r) => {
@@ -1011,7 +1031,7 @@ const orgRadarData = useMemo(() => {
             </div>
             
               {/* Distribution des scores */}
-              <ChartCard title="Distribution des scores" subtitle="Répartition des organismes par tranche de score">
+              <ChartCard title="Distribution des scores" subtitle="Répartition des organismes par tranche de score" style={{ marginBottom:"24px" }}>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={scoreDistribution}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1040,6 +1060,24 @@ const orgRadarData = useMemo(() => {
                         stroke={COLORS[i % COLORS.length]} strokeWidth={2}
                         dot={{ fill: COLORS[i % COLORS.length], r:3 }} />
                     ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : <EmptyState label="Pas encore de données temporelles" />}
+            </ChartCard>
+
+
+            {/* Évolution annuelle — full width — all evaluations */}
+            <ChartCard title="📈 Évolution des moyens des scores par année" subtitle="Toutes les évaluations correspondant aux filtres" style={{ marginBottom:"24px" }}>
+              {avgScoreByAnnee.length ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={avgScoreByAnnee}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="annee" />
+                    <YAxis domain={[0,100]} tickFormatter={v=>`${v}%`} />
+                    <Tooltip/>
+                      <Line key="avgScore" type="monotone" dataKey="averageScore"
+                        stroke={COLORS[0]} strokeWidth={2}
+                        dot={{ fill: COLORS[0], r:3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : <EmptyState label="Pas encore de données temporelles" />}
